@@ -29,26 +29,25 @@ int main(int argc, char **argv)
         int i = 1;
         int max_num = 0;
         int min_num = 0;
+        int sum = 0;
+
         while(argv[i])
         {
             int num = ft_atoi(argv[i]);
+            sum += num;
+
             if (num > max_num)
-            {
-                if((min_num > max_num) && (min_num < num))
-                    min_num = max_num;
                 max_num = num;
-                i++;
-            }
-            else if (num < min_num)
-            {
+            if (num < min_num)
                 min_num = num;
-                i++;
-            }
-            else
-                i++;
+
+            i++;
         }
+        int media = sum / (argc - 1);
+
         printf("El numero mas alto es %d\n", max_num);
         printf("El numero mas bajo es %d\n", min_num);
+        printf("La media es %d\n", media);
     }
     return(0);
 }
