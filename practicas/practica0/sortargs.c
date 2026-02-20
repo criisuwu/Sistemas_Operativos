@@ -20,14 +20,14 @@ void upcase_change(char **list, char c, int i, int k)
 
 void insertion_sort(char **str, int n) {
 	for (int i = 1; i < n; i++) {
-		char *key = str[i];
+		char *word = str[i];
 		int j = i - 1;
 
-		while (j >= 0 && strcmp(str[j], key) > 0) {
+		while (j >= 0 && strcmp(str[j], word) > 0) {
 			str[j + 1] = str[j];
 			j--;
 		}
-		str[j + 1] = key;
+		str[j + 1] = word;
 	}
 }
 
