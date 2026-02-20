@@ -1,7 +1,20 @@
+/*
+Ejercicio 0. Sortargs
+
+El programa esta preparado para recibir argumentos, con ello transforma las
+minusculas a mayusculas, y si es cualquier otro caracter imprimible o numero lo
+deja tal y como esta para luego ordenarlos lexicamente de forma creciente.
+Además, evita que se impriman palabras repetidas.
+
+Creado por: Cristina Homobono Fernández
+Fecha: 20 febrero 2026
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+// Funcion de verificacion de argumentos
 void
 check_arg(int argc)
 {
@@ -11,6 +24,7 @@ check_arg(int argc)
 	}
 }
 
+// Funcion para cambiar a mayuscula o ignorar mayusculas y otros caracteres
 void
 upcase_change(char **list, char c, int i, int k)
 {
@@ -20,6 +34,7 @@ upcase_change(char **list, char c, int i, int k)
 		list[i - 1][k] = c;
 }
 
+// Funcion del algoritmo de ordenacion
 void
 insertion_sort(char **str, int n)
 {
@@ -35,6 +50,7 @@ insertion_sort(char **str, int n)
 	}
 }
 
+// Funcion para evitar que las palabras se repitan
 void
 print_once(int n, char **list)
 {
@@ -45,6 +61,7 @@ print_once(int n, char **list)
 
 }
 
+// Funcion para liberar la memoria
 void
 free_list(int argc, char **list)
 {

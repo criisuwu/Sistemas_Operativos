@@ -1,15 +1,8 @@
 #!/bin/sh
 
 usage(){
-	echo "usage: indent *.[ch]" 1>&2
+	echo "usage: indent *.[ch]" 1>&2;
 	exit 1
-}
-
-dos2unixall(){
-	for i in "$@"; do
-		echo "warning: "$i" is a windows file, converting" 1>&2
-		sed -E -i 's/\r//g' "$i"
-	done
 }
 
 case $# in
@@ -17,16 +10,8 @@ case $# in
 	usage
 esac
 
-if od -c "$@" |egrep '\\r' >/dev/null 2>&1; then
-	dos2unixall "$@"
-fi
-
-uncomment() {
-	gcc -fpreprocessed -dD -E "$@"
-}
-
-types() {
-	uncomment "$1" | fgrep typedef  | fgrep struct | sed -E 's/.*[ \t]([a-zA-Z_]+) *[;}].*/\1/g'| sort -u
+types(){
+	fgrep typedef $1 | fgrep struct | sed -E 's/.*[ \t]([a-zA-Z_]+) *[;}].*/\1/g'| sort -u
 }
 
 typesall() {
