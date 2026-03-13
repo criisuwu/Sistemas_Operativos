@@ -5,6 +5,35 @@
 #include <sys/wait.h>
 #include <time.h>
 
+void
+check_arg(int argc)
+{
+	if (argc < 2) {
+		fprintf(stderr, "Error de argumentos\n");
+		exit(EXIT_FAILURE);
+	}
+}
+
+void
+malloc_check(pid_t *pids, time_t *start_times, char **cmds)
+{
+	if (!pids) {
+		fprintf(stderr, "malloc failed\n");
+		free(pids);
+		exit(EXIT_FAILURE);
+	}
+	if (!start_times) {
+		fprintf(stderr, "malloc failed\n");
+		free(start_times);
+		exit(EXIT_FAILURE);
+	}
+	if (!cmds) {
+		fprintf(stderr, "malloc failed\n");
+		free(cmds);
+		exit(EXIT_FAILURE);
+	}
+}
+
 static int
 parse_cmd_args(char *cmd_copy, char **args, int max_args)
 {
@@ -74,37 +103,26 @@ print_cmd_result(char *cmd, pid_t waited_pid, long elapsed, int success)
 	       cmd, (int)waited_pid, elapsed, exit_status_str);
 }
 
+void
+f_free(pid_t *pids, time_t *start_times, char **cmds)
+{
+	free(pids);
+	free(start_times);
+	free(cmds);
+}
+
 int
 main(int argc, char *argv[])
 {
-	if (argc < 2) {
-		fprintf(stderr, "Error de argumentos\n");
-		exit(EXIT_FAILURE);
-	}
+	check_arg(argc);
 
 	int num_cmds = argc - 1;
 
 	pid_t *pids = malloc(num_cmds * sizeof(pid_t));
-
-	if (!pids) {
-		fprintf(stderr, "malloc failed\n");
-		free(pids);
-		exit(EXIT_FAILURE);
-	}
 	time_t *start_times = malloc(num_cmds * sizeof(time_t));
-
-	if (!start_times) {
-		fprintf(stderr, "malloc failed\n");
-		free(start_times);
-		exit(EXIT_FAILURE);
-	}
 	char **cmds = malloc(num_cmds * sizeof(char *));
 
-	if (!cmds) {
-		fprintf(stderr, "malloc failed\n");
-		free(cmds);
-		exit(EXIT_FAILURE);
-	}
+	malloc_check(pids, start_times, cmds);
 
 	for (int cmd_i = 0; cmd_i < num_cmds; cmd_i++) {
 		cmds[cmd_i] = argv[cmd_i + 1];
@@ -139,9 +157,7 @@ main(int argc, char *argv[])
 		print_cmd_result(cmds[child_idx], waited_pid, elapsed, success);
 	}
 
-	free(pids);
-	free(start_times);
-	free(cmds);
+	f_free(pids, start_times, cmds);
 
 	if (all_success)
 		exit(EXIT_SUCCESS);
