@@ -5,6 +5,75 @@
 #include <sys/wait.h>
 #include <time.h>
 
+static int
+parse_cmd_args(char *cmd_copy, char **args, int max_args)
+{
+	int num_args = 0;
+	char *saveptr;
+	char *token = strtok_r(cmd_copy, " ", &saveptr);
+
+	while (token != NULL && num_args < max_args) {
+		args[num_args++] = token;
+		token = strtok_r(NULL, " ", &saveptr);
+	}
+	args[num_args] = NULL;
+	return num_args;
+}
+
+static pid_t
+spawn_child(char *cmd)
+{
+	char *cmd_copy = strdup(cmd);
+
+	if (!cmd_copy) {
+		fprintf(stderr, "strdup failed\n");
+		free(cmd_copy);
+		exit(EXIT_FAILURE);
+	}
+
+	char *args[256];
+
+	parse_cmd_args(cmd_copy, args, 255);
+
+	pid_t pid = fork();
+
+	if (pid < 0) {
+		fprintf(stderr, "fork failed\n");
+		exit(EXIT_FAILURE);
+	}
+
+	if (pid == 0) {
+		execv(args[0], args);
+		fprintf(stderr, "execv failed for %s\n", args[0]);
+		exit(EXIT_FAILURE);
+	}
+
+	free(cmd_copy);
+	return pid;
+}
+
+static int
+find_pid_index(pid_t *pids, int num_cmds, pid_t waited_pid)
+{
+	for (int i = 0; i < num_cmds; i++) {
+		if (pids[i] == waited_pid)
+			return i;
+	}
+	return -1;
+}
+
+static void
+print_cmd_result(char *cmd, pid_t waited_pid, long elapsed, int success)
+{
+	char *exit_status_str = "failure";
+
+	if (success)
+		exit_status_str = "success";
+
+	printf("cmd: %s, pid: %d, time: %ld seconds, status: %s\n",
+	       cmd, (int)waited_pid, elapsed, exit_status_str);
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -13,23 +82,23 @@ main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	int n = argc - 1;
+	int num_cmds = argc - 1;
 
-	pid_t *pids = malloc(n * sizeof(pid_t));
+	pid_t *pids = malloc(num_cmds * sizeof(pid_t));
 
 	if (!pids) {
 		fprintf(stderr, "malloc failed\n");
 		free(pids);
 		exit(EXIT_FAILURE);
 	}
-	time_t *start_times = malloc(n * sizeof(time_t));
+	time_t *start_times = malloc(num_cmds * sizeof(time_t));
 
 	if (!start_times) {
 		fprintf(stderr, "malloc failed\n");
 		free(start_times);
 		exit(EXIT_FAILURE);
 	}
-	char **cmds = malloc(n * sizeof(char *));
+	char **cmds = malloc(num_cmds * sizeof(char *));
 
 	if (!cmds) {
 		fprintf(stderr, "malloc failed\n");
@@ -37,84 +106,37 @@ main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	for (int i = 0; i < n; i++) {
-		cmds[i] = argv[i + 1];
-
-		char *buf = strdup(cmds[i]);
-
-		if (!buf) {
-			fprintf(stderr, "strdup failed\n");
-			free(buf);
-			exit(EXIT_FAILURE);
-		}
-
-		char *args[256];
-		int argc_cmd = 0;
-		char *saveptr;
-		char *token = strtok_r(buf, " ", &saveptr);
-
-		while (token != NULL && argc_cmd < 255) {
-			args[argc_cmd++] = token;
-			token = strtok_r(NULL, " ", &saveptr);
-		}
-		args[argc_cmd] = NULL;
-
-		start_times[i] = time(NULL);
-		pid_t pid = fork();
-
-		if (pid < 0) {
-			fprintf(stderr, "fork failed\n");
-			exit(EXIT_FAILURE);
-		}
-
-		if (pid == 0) {
-			execv(args[0], args);
-			fprintf(stderr, "execv failed for %s\n", args[0]);
-			exit(EXIT_FAILURE);
-		}
-
-		pids[i] = pid;
-		free(buf);
+	for (int cmd_i = 0; cmd_i < num_cmds; cmd_i++) {
+		cmds[cmd_i] = argv[cmd_i + 1];
+		start_times[cmd_i] = time(NULL);
+		pids[cmd_i] = spawn_child(cmds[cmd_i]);
 	}
 
 	int all_success = 1;
 
-	for (int waited = 0; waited < n; waited++) {
+	for (int waited = 0; waited < num_cmds; waited++) {
 		int status;
-		pid_t finished_pid = wait(&status);
+		pid_t waited_pid = wait(&status);
 
-		if (finished_pid < 0) {
+		if (waited_pid < 0) {
 			fprintf(stderr, "wait failed\n");
 			exit(EXIT_FAILURE);
 		}
 
 		time_t end_time = time(NULL);
 
-		int idx = -1;
+		int child_idx = find_pid_index(pids, num_cmds, waited_pid);
 
-		for (int i = 0; i < n; i++) {
-			if (pids[i] == finished_pid) {
-				idx = i;
-				break;
-			}
-		}
-
-		if (idx < 0)
+		if (child_idx < 0)
 			continue;
 
-		long elapsed = (long)(end_time - start_times[idx]);
+		long elapsed = (long)(end_time - start_times[child_idx]);
 		int success = WIFEXITED(status) && WEXITSTATUS(status) == 0;
 
 		if (!success)
 			all_success = 0;
 
-		char *status_str = "failure";
-
-		if (success)
-			status_str = "success";
-
-		printf("cmd: %s, pid: %d, time: %ld seconds, status: %s\n",
-		       cmds[idx], (int)finished_pid, elapsed, status_str);
+		print_cmd_result(cmds[child_idx], waited_pid, elapsed, success);
 	}
 
 	free(pids);
