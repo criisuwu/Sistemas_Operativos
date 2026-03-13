@@ -2,7 +2,7 @@
 Ejercicio 0. Sortargs
 
 El programa esta preparado para recibir argumentos, con ello transforma las
-minusculas a mayusculas, y si es cualquier otro caracter imprimible o numero lo
+minusculas a mayúsculas, y si es cualquier otro caracter imprimible o numero lo
 deja tal y como esta para luego ordenarlos lexicamente de forma creciente.
 Además, evita que se impriman palabras repetidas.
 
@@ -108,3 +108,4 @@ main(int argc, char **argv)
 
 	exit(EXIT_SUCCESS);
 }
+
