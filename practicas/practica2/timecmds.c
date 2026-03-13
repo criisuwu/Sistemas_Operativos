@@ -1,3 +1,25 @@
+/*
+*   Ejercicio 2. Timecmds
+*
+*   El programa esta preparado para recibir un número indeterminado de comandos
+*   (cada uno con su ruta y posibles argumentos) y los ejecuta de forma concurrente 
+*   creando un proceso hijo por cada comando. Cuando cada proceso haya terminado
+*   (failure o success) se muestra por la teminal una linea que indica:
+*       -El comando ejecutado
+*       -El PID del proceso
+*       -El tiempo de ejecucion (en segundos)
+*       -El estado de salida (failure o success)
+*   
+*   Por ejempo:
+*       $> timecmds '/bin/sleep 10' '/bin/sleep 10' '/bin/false'
+*       cmd: /bin/false, pid: 3434, time: 0 seconds, status: failure
+*       cmd: /bin/sleep 10, pid: 3432, time: 10 seconds, status: success
+*       cmd: /bin/sleep 10, pid: 3433, time: 10 seconds, status: success
+*
+*   Creado por: Cristina Homobono Fernández
+*   Fecha: 13 marzo 2026
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -5,6 +27,9 @@
 #include <sys/wait.h>
 #include <time.h>
 
+/* Función para verificar si el numero de
+*   de argumentos es valido.
+*/
 void
 check_arg(int argc)
 {
@@ -14,6 +39,9 @@ check_arg(int argc)
 	}
 }
 
+/* Función para verificar que los mallocs
+*   se hayan creado correctamente.
+*/
 void
 malloc_check(pid_t *pids, time_t *start_times, char **cmds)
 {
@@ -34,6 +62,10 @@ malloc_check(pid_t *pids, time_t *start_times, char **cmds)
 	}
 }
 
+/* Función utilizada para dividir el comando
+*   en palabras para poder pasarlo por execv
+*   despues.
+*/
 static int
 parse_cmd_args(char *cmd_copy, char **args, int max_args)
 {
@@ -49,8 +81,12 @@ parse_cmd_args(char *cmd_copy, char **args, int max_args)
 	return num_args;
 }
 
+/* Esta función copia el comando y lo pasa por parse_cmd_args
+*   para que tenga el formato correcto para poder pasarlo por
+*   el comando execv.
+*/
 static pid_t
-spawn_child(char *cmd)
+f_execmd(char *cmd)
 {
 	char *cmd_copy = strdup(cmd);
 
@@ -81,6 +117,9 @@ spawn_child(char *cmd)
 	return pid;
 }
 
+/* Esta función es para encontrar cual es el PID
+*   del proceso que ya haya terminado.
+ */
 static int
 find_pid_index(pid_t *pids, int num_cmds, pid_t waited_pid)
 {
@@ -91,6 +130,10 @@ find_pid_index(pid_t *pids, int num_cmds, pid_t waited_pid)
 	return -1;
 }
 
+/* Función para imprimir por terminal el resultado final
+*   del proceso: con su PID, el comando, el tiempo y
+*   el estado.
+ */
 static void
 print_cmd_result(char *cmd, pid_t waited_pid, long elapsed, int success)
 {
@@ -103,6 +146,7 @@ print_cmd_result(char *cmd, pid_t waited_pid, long elapsed, int success)
 	       cmd, (int)waited_pid, elapsed, exit_status_str);
 }
 
+/* Funicón para liberar memoria */
 void
 f_free(pid_t *pids, time_t *start_times, char **cmds)
 {
@@ -127,7 +171,7 @@ main(int argc, char *argv[])
 	for (int cmd_i = 0; cmd_i < num_cmds; cmd_i++) {
 		cmds[cmd_i] = argv[cmd_i + 1];
 		start_times[cmd_i] = time(NULL);
-		pids[cmd_i] = spawn_child(cmds[cmd_i]);
+		pids[cmd_i] = f_execmd(cmds[cmd_i]);
 	}
 
 	int all_success = 1;
