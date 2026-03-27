@@ -1,9 +1,22 @@
+/*
+*   Ejercicio 3. and
+*
+*   Este programa esta preparado para simular el funcionaminto del operador
+*	and en la shell de linux (cmd && cmd && cmd ...).
+*	El programa debe de recibir el ejecutable y los comandos entre comillas
+*	(./and "echo hola" "ls -la" "echo adios").
+*
+*   Creado por: Cristina Homobono Fernández
+*   Fecha: 27 marzo 2026
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
+/* Funcion de error de argumento */
 void
 ft_err(int argc)
 {
@@ -14,6 +27,7 @@ ft_err(int argc)
 	}
 }
 
+/* Funcion  para esperar a que el proceso hijo termine */
 int
 ft_wait(pid_t pid)
 {
@@ -28,6 +42,9 @@ ft_wait(pid_t pid)
 	return EXIT_FAILURE;
 }
 
+/* Funcion que ejejuta el comando
+*		¡Anotacion personal: Solo devuelve fallo en caso de que execv falle!
+*/
 void
 ft_child(char *path, char **argv)
 {
@@ -37,6 +54,10 @@ ft_child(char *path, char **argv)
 	exit(EXIT_FAILURE);
 }
 
+/* Funcion que efectua el fork, se llama al hijo para que ejecute el comando
+*	mientras el padre espera a que el hijo termine y devuelve el estado del
+*	hijo
+*/
 int
 ft_fork(char *path, char **argv)
 {
@@ -53,6 +74,7 @@ ft_fork(char *path, char **argv)
 	return ft_wait(pid);
 }
 
+/* Funcion que cuenta el numero de tokens y lo divide con espacios */
 int
 ft_count_tokens(char *cmd)
 {
@@ -64,16 +86,18 @@ ft_count_tokens(char *cmd)
 		return EXIT_FAILURE;
 	}
 	char *saveptr;
-	char *token = strtok_r(tmp, " \t", &saveptr);
+	char *token = strtok_r(tmp, " ", &saveptr);
 
 	while (token != NULL) {
 		count++;
-		token = strtok_r(NULL, " \t", &saveptr);
+		token = strtok_r(NULL, " ", &saveptr);
 	}
 	free(tmp);
 	return count;
 }
 
+/* Funcion para tokenizar los comandos y separarlos con espacios
+*/
 char **
 ft_tokenize(char *cmd, int *out_argc)
 {
@@ -86,17 +110,18 @@ ft_tokenize(char *cmd, int *out_argc)
 	}
 	int i = 0;
 	char *saveptr;
-	char *token = strtok_r(cmd, " \t", &saveptr);
+	char *token = strtok_r(cmd, " ", &saveptr);
 
 	while (token != NULL) {
 		argv[i++] = token;
-		token = strtok_r(NULL, " \t", &saveptr);
+		token = strtok_r(NULL, " ", &saveptr);
 	}
 	argv[i] = NULL;
 	*out_argc = argc;
 	return argv;
 }
 
+/* Crea el comando añadiendo al inicio de la cadena /bin/ */
 char *
 ft_build_path(char *name)
 {
@@ -112,6 +137,9 @@ ft_build_path(char *name)
 	return path;
 }
 
+/* Tokeniza el la cadena de comandos y crea el path completo.
+*	El proceso hijo ejecuta ese comando.
+*/
 int
 run_command(char *cmd)
 {
