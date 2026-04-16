@@ -118,14 +118,10 @@ process_urls(FILE *input)
 		failures = 255;
 	return failures;
 }
-
+/* Sin argumentos se tiene que quedar colgado */
 int
 main(int argc, char *argv[])
 {
-	if (argc != 2) {
-		fprintf(stderr, "ERROR: not enough arguments\n");
-		exit(EXIT_FAILURE);
-	} else {
 		FILE *input = open_input(argc, argv);
 		int failures = process_urls(input);
 
@@ -134,5 +130,4 @@ main(int argc, char *argv[])
 		if (failures == 0)
 			exit(EXIT_SUCCESS);
 		exit(failures);
-	}
 }
