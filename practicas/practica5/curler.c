@@ -24,7 +24,7 @@ run_curl(const char *url)
 	FILE *devnull = fopen("/dev/null", "w");
 
 	if (!devnull)
-		exit(EXIT_FAILURE);
+		exit(1);
 	int fd = fileno(devnull);
 
 	dup2(fd, STDOUT_FILENO);
@@ -32,7 +32,7 @@ run_curl(const char *url)
 	execl("/usr/bin/curl", "curl", "--connect-timeout", "5", url,
 	      (char *)NULL);
 	execl("/bin/curl", "curl", "--connect-timeout", "5", url, (char *)NULL);
-	exit(EXIT_FAILURE);
+	exit(1);
 }
 
 int
@@ -42,7 +42,7 @@ check_url(const char *url)
 
 	if (pid < 0) {
 		perror("fork");
-		exit(EXIT_FAILURE);
+		exit(255);
 	}
 	if (pid == 0)
 		run_curl(url);
@@ -57,14 +57,14 @@ open_input(int argc, char *argv[])
 {
 	if (argc > 2) {
 		fprintf(stderr, "error: too many arguments\n");
-		exit(EXIT_FAILURE);
+		exit(255);
 	}
 	if (argc == 2) {
 		FILE *f = fopen(argv[1], "r");
 
 		if (!f) {
 			perror("error opening file");
-			exit(EXIT_FAILURE);
+			exit(255);
 		}
 		return f;
 	}
@@ -78,7 +78,7 @@ alloc_line()
 
 	if (!line) {
 		fprintf(stderr, "error: out of memory\n");
-		exit(EXIT_FAILURE);
+		exit(255);
 	}
 	return line;
 }
@@ -93,7 +93,7 @@ validate_line(const char *line, size_t len, char *buf, FILE *input)
 		free(buf);
 		if (input != stdin)
 			fclose(input);
-		exit(EXIT_FAILURE);
+		exit(255);
 	}
 }
 
@@ -122,12 +122,17 @@ process_urls(FILE *input)
 int
 main(int argc, char *argv[])
 {
-	FILE *input = open_input(argc, argv);
-	int failures = process_urls(input);
+	if (argc != 2) {
+		fprintf(stderr, "ERROR: not enough arguments\n");
+		exit(EXIT_FAILURE);
+	} else {
+		FILE *input = open_input(argc, argv);
+		int failures = process_urls(input);
 
-	if (input != stdin)
-		fclose(input);
-	if (failures == 0)
-		exit(EXIT_SUCCESS);
-	exit(failures);
+		if (input != stdin)
+			fclose(input);
+		if (failures == 0)
+			exit(EXIT_SUCCESS);
+		exit(failures);
+	}
 }
