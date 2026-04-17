@@ -18,6 +18,9 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+/* Esta funcion ejecuta el proceso hijo y prueba con dos rutas
+*	en caso de que falle sale con exit 1.
+*/
 void
 run_curl(const char *url)
 {
@@ -35,6 +38,7 @@ run_curl(const char *url)
 	exit(1);
 }
 
+/* Esta funcion es del fork y verifica que la url exista*/
 int
 check_url(const char *url)
 {
@@ -49,47 +53,56 @@ check_url(const char *url)
 	int status;
 
 	waitpid(pid, &status, 0);
-	return !(WIFEXITED(status) && WEXITSTATUS(status) == 0);
+	if (WIFEXITED(status) && WEXITSTATUS(status) == 0)
+    	return 0;
+	return 1;
 }
 
+/* Esta funcion valida los argumentos. En caso de que no haya
+*	argumentos se queda esperando por la entrada stdin.
+*/
 FILE *
 open_input(int argc, char *argv[])
 {
 	if (argc > 2) {
-		fprintf(stderr, "error: too many arguments\n");
+		fprintf(stderr, "ERROR: too many arguments\n");
 		exit(255);
 	}
 	if (argc == 2) {
-		FILE *f = fopen(argv[1], "r");
+		FILE *file = fopen(argv[1], "r");
 
-		if (!f) {
-			perror("error opening file");
+		if (!file) {
+			perror("ERROR: can't open the file");
 			exit(255);
 		}
-		return f;
+		return file;
 	}
 	return stdin;
 }
 
+/* Esta funcion hace el malloc con la memoria solicitada */
 char *
 alloc_line()
 {
 	char *line = malloc(514);
 
 	if (!line) {
-		fprintf(stderr, "error: out of memory\n");
+		fprintf(stderr, "ERROR: out of memory\n");
 		exit(255);
 	}
 	return line;
 }
 
+/* Esta funcion verifica el tamaño de la linea y ademas verifica
+*	que la linea empiece por https:// o por http://
+*/
 void
 validate_line(const char *line, size_t len, char *buf, FILE *input)
 {
 	if (len > 512 ||
 	    (strncmp(line, "http://", 7) != 0
 	     && strncmp(line, "https://", 8) != 0)) {
-		fprintf(stderr, "error: invalid line \"%s\"\n", line);
+		fprintf(stderr, "ERROR: invalid line \"%s\"\n", line);
 		free(buf);
 		if (input != stdin)
 			fclose(input);
@@ -97,6 +110,9 @@ validate_line(const char *line, size_t len, char *buf, FILE *input)
 	}
 }
 
+/* Esta funcion lee las lineas con el comando fgets y les quita
+*	el salto de linea.
+*/
 int
 process_urls(FILE *input)
 {
@@ -118,7 +134,7 @@ process_urls(FILE *input)
 		failures = 255;
 	return failures;
 }
-/* Sin argumentos se tiene que quedar colgado */
+
 int
 main(int argc, char *argv[])
 {
