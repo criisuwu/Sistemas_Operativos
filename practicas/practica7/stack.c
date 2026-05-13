@@ -25,124 +25,137 @@
 #include "stack.h"
 
 struct Stack {
-    void          **data;
-    int             top;
-    int             cap;
-    pthread_mutex_t lock;
+	void **data;
+	int top;
+	int cap;
+	pthread_mutex_t lock;
 };
 
 /* Crea una pila vacía con capacidad inicial sz.
 */
-Stack *newstack(int sz)
+Stack *
+newstack(int sz)
 {
-    if (sz <= 0)
-        return NULL;
+	if (sz <= 0)
+		return NULL;
 
-    Stack *s = malloc(sizeof(Stack));
-    if (s == NULL)
-        return NULL;
+	Stack *s = malloc(sizeof(Stack));
 
-    s->data = malloc((size_t)sz * sizeof(void *));
-    if (s->data == NULL) {
-        free(s);
-        return NULL;
-    }
+	if (s == NULL)
+		return NULL;
 
-    s->top = 0;
-    s->cap = sz;
+	s->data = malloc((size_t)sz * sizeof(void *));
+	if (s->data == NULL) {
+		free(s);
+		return NULL;
+	}
 
-    if (pthread_mutex_init(&s->lock, NULL) != 0) {
-        free(s->data);
-        free(s);
-        return NULL;
-    }
+	s->top = 0;
+	s->cap = sz;
 
-    return s;
+	if (pthread_mutex_init(&s->lock, NULL) != 0) {
+		free(s->data);
+		free(s);
+		return NULL;
+	}
+
+	return s;
 }
 
 /* Verificación de si la pila esta vacia.
 */
-int isempty(Stack *s)
+int
+isempty(Stack *s)
 {
-    pthread_mutex_lock(&s->lock);
-    int empty = (s->top == 0);
-    pthread_mutex_unlock(&s->lock);
-    return empty;
+	pthread_mutex_lock(&s->lock);
+	int empty = (s->top == 0);
+
+	pthread_mutex_unlock(&s->lock);
+	return empty;
 }
 
 /* Esta funcion inserta un elemento en la cima de la pila. Si la pila
 *  está llena, dobla el tamaño del array con realloc.
 */
-void push(Stack *s, void *elem)
+void
+push(Stack *s, void *elem)
 {
-    pthread_mutex_lock(&s->lock);
+	pthread_mutex_lock(&s->lock);
 
-    if (s->top == s->cap) {
-        int newcap = s->cap * 2;
-        void **newdata = realloc(s->data, (size_t)newcap * sizeof(void *));
-        if (newdata == NULL) {
-            pthread_mutex_unlock(&s->lock);
-            fprintf(stderr, "push: realloc failed, element not inserted\n");
-            return;
-        }
-        s->data = newdata;
-        s->cap  = newcap;
-    }
+	if (s->top == s->cap) {
+		int newcap = s->cap * 2;
+		void **newdata =
+		    realloc(s->data, (size_t)newcap * sizeof(void *));
+		if (newdata == NULL) {
+			pthread_mutex_unlock(&s->lock);
+			fprintf(stderr,
+				"push: realloc failed, element not inserted\n");
+			return;
+		}
+		s->data = newdata;
+		s->cap = newcap;
+	}
 
-    s->data[s->top++] = elem;
+	s->data[s->top++] = elem;
 
-    pthread_mutex_unlock(&s->lock);
+	pthread_mutex_unlock(&s->lock);
 }
 
 /* Esta función extrae y devuelve el elemento de la cima. En caso de
 *  que este vacia devuelve NULL.
 */
-void *pop(Stack *s)
+void *
+pop(Stack *s)
 {
-    pthread_mutex_lock(&s->lock);
+	pthread_mutex_lock(&s->lock);
 
-    if (s->top == 0) {
-        pthread_mutex_unlock(&s->lock);
-        return NULL;
-    }
+	if (s->top == 0) {
+		pthread_mutex_unlock(&s->lock);
+		return NULL;
+	}
 
-    void *elem = s->data[--s->top];
+	void *elem = s->data[--s->top];
 
-    pthread_mutex_unlock(&s->lock);
-    return elem;
+	pthread_mutex_unlock(&s->lock);
+	return elem;
 }
 
 /* Esta función devuelve el número de elementos almacenados en la pila.
 */
-int nelems(Stack *s)
+int
+nelems(Stack *s)
 {
-    pthread_mutex_lock(&s->lock);
-    int n = s->top;
-    pthread_mutex_unlock(&s->lock);
-    return n;
+	pthread_mutex_lock(&s->lock);
+	int n = s->top;
+
+	pthread_mutex_unlock(&s->lock);
+	return n;
 }
 
 /* Esta función imprime por la salida de errores la capacidad, el
 *  número de elementos y los punteros almacenados.
 */
-void dumpstack(Stack *s)
+void
+dumpstack(Stack *s)
 {
-    pthread_mutex_lock(&s->lock);
+	pthread_mutex_lock(&s->lock);
 
-    fprintf(stderr, "Stack@%p  cap=%d  nelems=%d\n", (void *)s, s->cap, s->top);
-    for (int i = s->top - 1; i >= 0; i--)
-        fprintf(stderr, "  [%d] %p\n", i, s->data[i]);
+	fprintf(stderr, "Stack@%p  cap=%d  nelems=%d\n", (void *)s, s->cap,
+		s->top);
+	for (int i = s->top - 1; i >= 0; i--)
+		fprintf(stderr, "  [%d] %p\n", i, s->data[i]);
 
-    pthread_mutex_unlock(&s->lock);
+	pthread_mutex_unlock(&s->lock);
 }
 
 /* Esta función libera la memoria de la pila.
 */
-void freestack(Stack *s)
+void
+freestack(Stack *s)
 {
-    if (s == NULL)
-        return;
-    pthread_mutex_destroy(&s->lock);
-    free(s->data);
-    free(s);
+	if (s == NULL)
+		return;
+	pthread_mutex_destroy(&s->lock);
+	free(s->data);
+	free(s);
 }
